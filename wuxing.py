@@ -38,38 +38,35 @@ nx,ny,nc = observation.shape
 
 #Returns a general direction to the Food
 def detector(hloc,floc):
-	dire = [0,0,0,0]
+	dire = 0
 	#dire = [UP,RIGHT,DOWN,LEFT]
 	hx, hy = hloc[0],hloc[1]
 	fx, fy = floc[0],floc[1]
 	diffx,diffy = (fx-hx),(fy-hy)
 	if ((diffx == 0) and (diffy == 0)):
-		dire = [0,0,0,0]
+		dire = 0
 	elif ((abs(diffx) - abs(diffy)) > 0): 	#The axis where the abosolute difference is greater should have the direction 
 		if (diffx > 0):						#If depending the different it would be along the axis in a positive direction
-			dire = [0,1,0,0]
+			dire = 1
 		elif (diffx < 0):					#or negative diretion
-			dire = [0,0,0,1]
+			dire = 3
 	elif ((abs(diffx) - abs(diffy)) < 0):
 		if (diffy > 0):
-			dire = [1,0,0,0]
+			dire = 0
 		elif (diffy < 0):
-			dire = [0,0,1,0]
+			dire = 2
 	elif ((abs(diffx) == abs(diffy)) and (diffx != 0)): #If the absolute difference is same then it lies on the dividing lines
 		if (diffx > 0):									#So the direction assigned is the next sector which is in clockwise direction
 			if (diffy > 0):
-				dire = [0,1,0,0]
+				dire = 1
 			else:
-				dire = [0,0,1,0]
+				dire = 2
 		else:
 			if (diffy > 0):
-				dire = [1,0,0,0]
+				dire = 0
 			else:
-				dire = [0,0,0,1]
-	i = 0
-	while (dire[i] != 1):
-		i = i + 1
-	return i
+				dire = 3
+	return dire
 
 #print(detector([0,0],[-1,1]))
 #np.array_equal(obs[L[0]][L[1]], BODY_COLOR)
@@ -154,11 +151,11 @@ def rel_act(hdir,act):
 		   [2,3,0]]
 	return (rel[hdir][act])
 
-def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.1,lmbd = 0.9):
+def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 	obs = env.reset()
 	epn = 0
 	#Initializing the Policy
-	Pol = {d : {det : {bod : 0 for bod in range(8)} for det in range(4)} for d in range(4)}
+	Pol = {d : {det : {bod : np.random.randint(3) for bod in range(8)} for det in range(4)} for d in range(4)}
 	#Episodes
 	while (epn < n_episode):
 		print(epn)
@@ -195,7 +192,7 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.1,lmbd = 0.9):
 			#if hasattr(snake,'head'):
 			hloc = snake.head
 			hdir = snake.direction
-			#print(hloc,hdir)
+			#print(hloc,hdir,"Old")
 
 			#Declaring and finding the Food Location
 			floc = [0,0]
@@ -216,10 +213,14 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.1,lmbd = 0.9):
 			#print(reward,end)
 
 			#New State
+			for x in range(0,nx,10):
+				for y in range(0,ny,10):
+					if (np.array_equal(obs[x][y],FOOD_COLOR)):
+						floc = [x,y]
 			nloc = snake.head
 			ndir = snake.direction
 			nbod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
-			ndet = detector(hloc,floc)
+			ndet = detector(nloc,floc)
 			#print(nloc,ndir)
 
 			#Since the env requires an extra step to end the episode
@@ -248,8 +249,11 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.1,lmbd = 0.9):
 		epn = epn + 1
 	return Pol
 
-Pol = wuxing(env,10000)
-print(Pol)
+Pol = wuxing(env,1500)
+#print(Pol)
+for d in Pol:
+	for det in Pol[d]:
+		print(d,det,Pol[d][det])
 obs = env.reset()
 end = False
 while (not end):
