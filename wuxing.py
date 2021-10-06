@@ -151,6 +151,20 @@ def rel_act(hdir,act):
 		   [2,3,0]]
 	return (rel[hdir][act])
 
+#  hdir\det  0   1   2   3
+#    0       0   1   2   3  
+#    1       3   0   1   2  
+#    2       2   3   0   1  
+#    3       1   2   3   0  
+
+def rel_det(hdir,det):
+	rel = [[0,1,2,3],
+		   [3,0,1,2],
+		   [2,3,0,1],
+		   [1,2,3,0]]
+	return rel[hdir][det]
+
+
 def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 	obs = env.reset()
 	epn = 0
@@ -249,13 +263,104 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 		epn = epn + 1
 	return Pol
 
-Pol = wuxing(env,10000)
-#print(Pol)
-for d in Pol:
-	for det in Pol[d]:
-		print(d,det,Pol[d][det])
-obs = env.reset()
-end = False
+def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
+	obs = env.reset()
+	epn = 0
+	#Initializing the Policy
+	Pol = {det : {bod : np.random.randint(3) for bod in range(8)} for det in range(4)}
+	#Episodes
+	while (epn < n_episode):
+		print(epn)
+		obs = env.reset()
+		#env.render()
+		end = False
+		#hloc = snake.head
+		#hdir = snake.direction
+
+		#Initalizing Q-values
+		Q = {det : {bod : {act : 0 for act in range(3)} for bod in range(8)} for det in range(4)}
+		#Pol = {d : {det : {bod : 0 for bod in range(8)} for det in range(4)} for d in range(4)}
+		
+		#Running an episode
+		while (not end):
+			#Eligibility Traces
+			E = {det : {bod : {act : 0 for act in range(3)} for bod in range(8)} for det in range(4)}
+			
+			#Random Action Selector
+			A = np.random.randint(3)
+			#env.render()
+			ε = 450/(epn+450)
+			
+			# Controller
+			game_controller = env.controller
+			
+			# Grid
+			grid_object = game_controller.grid
+			grid_pixels = grid_object.grid
+			
+			# Snake(s)
+			snakes_array = game_controller.snakes
+			snake = snakes_array[0]
+			#if hasattr(snake,'head'):
+			hloc = snake.head
+			hdir = snake.direction
+			#print(hloc,hdir,"Old")
+
+			#Declaring and finding the Food Location
+			floc = [0,0]
+			for x in range(0,nx,10):
+				for y in range(0,ny,10):
+					if (np.array_equal(obs[x][y],FOOD_COLOR)):
+						floc = [x,y]
+			
+			#Declaring the blocked directions and direction of the Food
+			bod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			det = detector(hloc,floc)
+			rdet = rel_det(hdir,det)
+
+			#ε - Greedy Action Selector
+			A = Pol[rdet][bod] if (np.random.random_sample() > (ε)) else A
+
+			#Taking a step
+			obs, reward, end, info = env.step(rel_act(hdir,A))
+			#print(reward,end)
+
+			#New State
+			for x in range(0,nx,10):
+				for y in range(0,ny,10):
+					if (np.array_equal(obs[x][y],FOOD_COLOR)):
+						floc = [x,y]
+			nloc = snake.head
+			ndir = snake.direction
+			nbod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			ndet = detector(nloc,floc)
+			nrdet = rel_det(hdir,ndet)
+			#print(nloc,ndir)
+
+			#Since the env requires an extra step to end the episode
+			if (reward == -1):
+				obs, _, end, info = env.step(rel_act(ndir,A))
+
+			#Target
+			targe = reward + (gamma*Q[nrdet][nbod][Pol[nrdet][nbod]]) - Q[rdet][bod][A]
+			
+			#Spiking the Eligibility Traces
+			E[rdet][bod][A] = E[rdet][bod][A] + 1
+
+			#Sweeping through the states to reduce Eligibility and update Q-Value according 
+			for sdet in Q:
+				for sbod in Q[sdet]:
+					max_a = Pol[sdet][sbod]
+					for sa in range(3):
+						Q[sdet][sbod][sa] = Q[sdet][sbod][sa] + (α*targe*E[sdet][sbod][sa])
+						E[sdet][sbod][sa] = gamma*lmbd*E[sdet][sbod][sa]
+						max_a = sa if Q[sdet][sbod][sa] > Q[sdet][sbod][max_a] else max_a
+					Pol[sdet][sbod] = max_a
+			#else:
+			#	obs,reward,end,info = env.step(A)
+			#	print(reward,end)
+		epn = epn + 1
+	return Pol
 
 #Pol = 	{0:
 #			{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}},
@@ -265,6 +370,42 @@ end = False
 #		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}},
 #		 3:
 #		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}}}
+
+
+#Pol = wuxing(env,1000)
+##print(Pol)
+#for d in Pol:
+#	for det in Pol[d]:
+#		print(d,det,Pol[d][det])
+#obs = env.reset()
+#end = False
+#
+#while (not end):
+#	env.render()
+#	hloc = snake.head
+#	hdir = snake.direction
+#	floc = [0,0]
+#	for x in range(0,nx,10):
+#		for y in range(0,ny,10):
+#			if (np.array_equal(obs[x][y],FOOD_COLOR)):
+#				floc = [x,y]
+#	bod = boder(env,nx,ny,hloc[0],hloc[1],hdir,obs)
+#	det = detector(hloc,floc)
+#	A = Pol[hdir][det][bod]
+#	obs, reward, end, info = env.step(rel_act(hdir,A))
+#env.close()
+
+#Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
+#	   1 :{0: 2, 1: 1, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 2},
+#	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
+#	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
+
+#Pol = wuxing_rel(env,1500)
+#print(Pol)
+for det in Pol:
+	print(det,Pol[det])
+obs = env.reset()
+end = False
 
 while (not end):
 	env.render()
@@ -277,6 +418,7 @@ while (not end):
 				floc = [x,y]
 	bod = boder(env,nx,ny,hloc[0],hloc[1],hdir,obs)
 	det = detector(hloc,floc)
-	A = Pol[hdir][det][bod]
-	obs, reward, end, info = env.step(A)
+	rdet = rel_det(hdir,det)
+	A = Pol[rdet][bod]
+	obs, reward, end, info = env.step(rel_act(hdir,A))
 env.close()
