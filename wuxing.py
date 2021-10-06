@@ -45,34 +45,47 @@ def detector(hloc,floc):
 	diffx,diffy = (fx-hx),(fy-hy)
 	if ((diffx == 0) and (diffy == 0)):
 		dire = 0
-	elif ((abs(diffx) - abs(diffy)) > 0): 	#The axis where the abosolute difference is greater should have the direction 
-		if (diffx > 0):						#If depending the different it would be along the axis in a positive direction
-			dire = 1
-		elif (diffx < 0):					#or negative diretion
-			dire = 3
-	elif ((abs(diffx) - abs(diffy)) < 0):
-		if (diffy > 0):
-			dire = 0
-		elif (diffy < 0):
-			dire = 2
-	elif ((abs(diffx) == abs(diffy)) and (diffx != 0)): #If the absolute difference is same then it lies on the dividing lines
+	#elif ((abs(diffx) - abs(diffy)) > 0): 	#The axis where the abosolute difference is greater should have the direction 
+	#	if (diffx > 0):						#If depending the different it would be along the axis in a positive direction
+	#		dire = 1
+	#	elif (diffx < 0):					#or negative diretion
+	#		dire = 3
+	#elif ((abs(diffx) - abs(diffy)) < 0):
+	#	if (diffy > 0):
+	#		dire = 2#0
+	#	elif (diffy < 0):
+	#		dire = 0#2
+	if ((abs(diffx) == abs(diffy)) and (diffx != 0)): #If the absolute difference is same then it lies on the dividing lines
 		if (diffx > 0):									#So the direction assigned is the next sector which is in clockwise direction
 			if (diffy > 0):
-				dire = 1
-			else:
 				dire = 2
+			else:
+				dire = 1
 		else:
 			if (diffy > 0):
-				dire = 0
-			else:
 				dire = 3
+			else:
+				dire = 0
+	elif (diffx > diffy):
+		if (diffx < -1*diffy):
+			dire = 0
+		elif (diffx > diffy*-1):
+			dire = 1
+	elif (diffx < diffy):
+		if (diffx > diffy*-1):
+			dire = 2
+		elif (diffx < diffy*-1):
+			dire = 3
+	else:
+		dire = 0
+
 	return dire
 
-#print(detector([0,0],[-1,1]))
+#print(detector([0,0],[0,1]))
 #np.array_equal(obs[L[0]][L[1]], BODY_COLOR)
 
 #Body and Border detector
-def boder(envir,nx,ny,hx,hy,hd,obs):
+def boder(hx,hy,hd,obs):
 	#hx,hy = envir.head
 	#hd = envir.direction
 	nx,ny,nc = obs.shape
@@ -216,7 +229,7 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						floc = [x,y]
 			
 			#Declaring the blocked directions and direction of the Food
-			bod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			bod = boder(snake.head[0],snake.head[1],hdir,obs)
 			det = detector(hloc,floc)
 
 			#ε - Greedy Action Selector
@@ -233,7 +246,7 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						floc = [x,y]
 			nloc = snake.head
 			ndir = snake.direction
-			nbod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			nbod = boder(snake.head[0],snake.head[1],snake.direction,obs)
 			ndet = detector(nloc,floc)
 			#print(nloc,ndir)
 
@@ -267,7 +280,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 	obs = env.reset()
 	epn = 0
 	#Initializing the Policy
-	Pol = {det : {bod : np.random.randint(3) for bod in range(8)} for det in range(4)}
+	Pol = {det : {bod : 0 for bod in range(8)} for det in range(4)}
 	#Episodes
 	while (epn < n_episode):
 		print(epn)
@@ -283,13 +296,14 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 		
 		#Running an episode
 		while (not end):
+			#env.render()
 			#Eligibility Traces
 			E = {det : {bod : {act : 0 for act in range(3)} for bod in range(8)} for det in range(4)}
 			
 			#Random Action Selector
 			A = np.random.randint(3)
 			#env.render()
-			ε = 450/(epn+450)
+			ε = 100/(epn+100)
 			
 			# Controller
 			game_controller = env.controller
@@ -314,7 +328,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						floc = [x,y]
 			
 			#Declaring the blocked directions and direction of the Food
-			bod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			bod = boder(snake.head[0],snake.head[1],snake.direction,obs)
 			det = detector(hloc,floc)
 			rdet = rel_det(hdir,det)
 
@@ -323,6 +337,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 
 			#Taking a step
 			obs, reward, end, info = env.step(rel_act(hdir,A))
+			reward = -0.01 if (reward == 0) else reward
 			#print(reward,end)
 
 			#New State
@@ -332,7 +347,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						floc = [x,y]
 			nloc = snake.head
 			ndir = snake.direction
-			nbod = boder(env,nx,ny,snake.head[0],snake.head[1],snake.direction,obs)
+			nbod = boder(snake.head[0],snake.head[1],snake.direction,obs)
 			ndet = detector(nloc,floc)
 			nrdet = rel_det(hdir,ndet)
 			#print(nloc,ndir)
@@ -372,38 +387,11 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 #		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}}}
 
 
-#Pol = wuxing(env,1000)
-##print(Pol)
-#for d in Pol:
-#	for det in Pol[d]:
-#		print(d,det,Pol[d][det])
-#obs = env.reset()
-#end = False
-#
-#while (not end):
-#	env.render()
-#	hloc = snake.head
-#	hdir = snake.direction
-#	floc = [0,0]
-#	for x in range(0,nx,10):
-#		for y in range(0,ny,10):
-#			if (np.array_equal(obs[x][y],FOOD_COLOR)):
-#				floc = [x,y]
-#	bod = boder(env,nx,ny,hloc[0],hloc[1],hdir,obs)
-#	det = detector(hloc,floc)
-#	A = Pol[hdir][det][bod]
-#	obs, reward, end, info = env.step(rel_act(hdir,A))
-#env.close()
-
-#Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
-#	   1 :{0: 2, 1: 1, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 2},
-#	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
-#	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
-
-#Pol = wuxing_rel(env,1500)
+Pol = wuxing(env,1000)
 #print(Pol)
-for det in Pol:
-	print(det,Pol[det])
+for d in Pol:
+	for det in Pol[d]:
+		print(d,det,Pol[d][det])
 obs = env.reset()
 end = False
 
@@ -416,9 +404,53 @@ while (not end):
 		for y in range(0,ny,10):
 			if (np.array_equal(obs[x][y],FOOD_COLOR)):
 				floc = [x,y]
-	bod = boder(env,nx,ny,hloc[0],hloc[1],hdir,obs)
+	bod = boder(hloc[0],hloc[1],hdir,obs)
+	det = detector(hloc,floc)
+	A = Pol[hdir][det][bod]
+	obs, reward, end, info = env.step(rel_act(hdir,A))
+#env.close()
+
+Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
+	   1 :{0: 2, 1: 1, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 2},
+	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
+	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
+
+#Pol = wuxing_rel(env,1500)
+#print(Pol)
+for det in Pol:
+	print(det,Pol[det])
+obs = env.reset()
+end = False
+
+while (not end):
+	env.render()
+	# Controller
+	game_controller = env.controller
+	
+	# Grid
+	grid_object = game_controller.grid
+	grid_pixels = grid_object.grid
+	
+	# Snake(s)
+	snakes_array = game_controller.snakes
+	snake = snakes_array[0]
+
+	hloc = snake.head
+	hdir = snake.direction
+	floc = [0,0]
+	for x in range(0,nx,10):
+		for y in range(0,ny,10):
+			if (np.array_equal(obs[x][y],FOOD_COLOR)):
+				floc = [x,y]
+	bod = boder(hloc[0],hloc[1],hdir,obs)
 	det = detector(hloc,floc)
 	rdet = rel_det(hdir,det)
+	print(hloc,hdir,det,rdet,bod)
 	A = Pol[rdet][bod]
+	print(A)
 	obs, reward, end, info = env.step(rel_act(hdir,A))
+	print(snake.head,snake.direction,"new")
+	#Since the env requires an extra step to end the episode
+	if (reward == -1):
+		obs, _, end, info = env.step(rel_act(hdir,A))
 env.close()
