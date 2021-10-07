@@ -5,7 +5,7 @@ import gym_snake
 
 #Making the environment
 env = gym.make('snake-v0')
-env.grid_size = [50,50]
+env.grid_size = [12,12]
 env.unit_size = 10
 env.unit_gap = 1
 env.snake_size = 3
@@ -31,7 +31,7 @@ snakes_array = game_controller.snakes
 snake = snakes_array[0]
 
 #print(snake.head,snake.direction)
-#print(observation.shape)
+print(observation.shape)
 #print(observation)
 
 nx,ny,nc = observation.shape
@@ -95,66 +95,71 @@ def boder(hx,hy,hd,obs):
 		L = ((hx-1)*10,(hy)*10)
 		C = (10*hx, 10*(hy-1))
 		R = (10*(hx+1),10*hy)
+		print(hd,L,C,R)
 		if (L[0] < 0):
 			outbin = outbin + 4
-		elif (np.array_equal(obs[L[0]][L[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
 			outbin = outbin + 4
 		if (C[1] < 0):
 			outbin = outbin + 2
-		elif (np.array_equal(obs[C[0]][C[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
 			outbin = outbin + 2
-		if (R[0] >= 10*nx):
+		if (R[0] >= nx):
 			outbin = outbin + 1
-		elif (np.array_equal(obs[R[0]][R[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
 			outbin = outbin + 1
 	if (hd == 1):
 		L = (10*hx,10*(hy-1))
 		C = (10*(hx+1), 10*hy)
 		R = (10*hx,10*(hy+1))
+		print(hd,L,C,R)
 		if (L[1] < 0):
 			outbin = outbin + 4
-		elif (np.array_equal(obs[L[0]][L[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
 			outbin = outbin + 4
-		if (C[0] >= 10*nx):
+		if (C[0] >= nx):
 			outbin = outbin + 2
-		elif (np.array_equal(obs[C[0]][C[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
 			outbin = outbin + 2
-		if (R[1] >= 10*ny):
+		if (R[1] >= ny):
 			outbin = outbin + 1
-		elif (np.array_equal(obs[R[0]][R[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
 			outbin = outbin + 1
 	if (hd == 2):
 		L = (10*(hx+1),10*hy)
 		C = (10*hx, 10*(hy+1))
 		R = (10*(hx-1),10*hy)
-		if (L[0] >= 10*nx):
+		print(hd,L,C,R)
+		if (L[0] >= nx):
 			outbin = outbin + 4
-		elif (np.array_equal(obs[L[0]][L[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
 			outbin = outbin + 4
-		if (C[1] >= 10*ny):
+		if (C[1] >= ny):
 			outbin = outbin + 2
-		elif (np.array_equal(obs[C[0]][C[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
 			outbin = outbin + 2
 		if (R[0] < 0):
 			outbin = outbin + 1
-		elif (np.array_equal(obs[R[0]][R[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
 			outbin = outbin + 1
 	if (hd == 3):
 		L = (10*hx,10*(hy+1))
 		C = (10*(hx-1), 10*hy)
 		R = (10*hx,10*(hy-1))
-		if (L[1] >= 10*ny):
+		print(hd,L,C,R)
+		if (L[1] >= ny):
 			outbin = outbin + 4
-		elif (np.array_equal(obs[L[0]][L[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
 			outbin = outbin + 4
 		if (C[0] < 0):
 			outbin = outbin + 2
-		elif (np.array_equal(obs[C[0]][C[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
 			outbin = outbin + 2
 		if (R[1] < 0):
 			outbin = outbin + 1
-		elif (np.array_equal(obs[R[0]][R[1]], BODY_COLOR)):
+		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
 			outbin = outbin + 1
+	#print(hx,hy,L,obs[L[1]][L[0]],C,obs[C[1]][C[0]],R,obs[R[1]][R[0]])
 	return outbin
 
 def rel_act(hdir,act):
@@ -419,7 +424,7 @@ Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
 	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
 	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
 
-#Pol = wuxing_rel(env,2000)
+Pol = wuxing_rel(env,2000)
 #print(Pol)
 for det in Pol:
 	print(det,Pol[det])
