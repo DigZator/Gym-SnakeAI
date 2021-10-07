@@ -327,6 +327,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 			#Since the env requires an extra step to end the episode
 			if (reward == -1):
 				obs, _, end, info = env.step(rel_act(ndir,A))
+				reward = -10
 
 			#Target
 			targe = reward + (gamma*Q[nrdet][nbod][Pol[nrdet][nbod]]) - Q[rdet][bod][A]
@@ -389,45 +390,58 @@ Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
 
 Pol = wuxing_rel(env,5000,0.9)
 #print(Pol)
+
+def test_pol(Pol,SIZE = [20,20],rep_step = False):
+	envt = gym.make('snake-v0')
+	envt.grid_size = SIZE
+	envt.unit_size = 10
+	envt.unit_gap = 1
+	envt.snake_size = 3
+	envt.n_snakes = 1
+	envt.n_foods = 1
+
+	end = False
+	ss = 0
+	obs = envt.reset()
+	while (not end):
+		envt.render()
+		# Controller
+		game_controller = envt.controller
+		
+		# Grid
+		grid_object = game_controller.grid
+		grid_pixels = grid_object.grid
+		
+		# Snake(s)
+		snakes_array = game_controller.snakes
+		snake = snakes_array[0]
+	
+		hloc = snake.head
+		hdir = snake.direction
+		floc = [0,0]
+		for x in range(0,nx,10):
+			for y in range(0,ny,10):
+				if (np.array_equal(obs[x][y],FOOD_COLOR)):
+					floc = [y/10,x/10]
+		bod = boder(hloc[0],hloc[1],hdir,obs)
+		det = detector(hloc,floc)
+		rdet = rel_det(hdir,det)
+		
+		if rep_step:
+			print("Head :",hloc,"Food :",floc,"Dire :",hdir,"Det :",det,"RDet :",rdet,"Bod :",bod)
+		
+		A = rel_act(hdir,Pol[rdet][bod])
+		#print(A)
+		obs, reward, end, info = envt.step(A)
+	
+		ss = ss + 1 if reward == 1 else ss
+		#Since the env requires an extra step to end the episode
+		if (reward == -1):
+			obs, _, end, info = envt.step(A)
+	return ss
+
 for det in Pol:
 	print(det,Pol[det])
 #env.grid_size = [12,8]
-obs = env.reset()
-end = False
-ss = 0
-while (not end):
-	env.render()
-	# Controller
-	game_controller = env.controller
-	
-	# Grid
-	grid_object = game_controller.grid
-	grid_pixels = grid_object.grid
-	
-	# Snake(s)
-	snakes_array = game_controller.snakes
-	snake = snakes_array[0]
 
-	hloc = snake.head
-	hdir = snake.direction
-	floc = [0,0]
-	for x in range(0,nx,10):
-		for y in range(0,ny,10):
-			if (np.array_equal(obs[x][y],FOOD_COLOR)):
-				floc = [y/10,x/10]
-	bod = boder(hloc[0],hloc[1],hdir,obs)
-	det = detector(hloc,floc)
-	rdet = rel_det(hdir,det)
-	
-	print("Head :",hloc,"Food :",floc,"Dire :",hdir,"Det :",det,"RDet :",rdet,"Bod :",bod)
-	
-	A = rel_act(hdir,Pol[rdet][bod])
-	print(A)
-	obs, reward, end, info = env.step(A)
-	#print(snake.head,snake.direction,"new")
-	ss = ss + 1 if reward == 1 else ss
-	#Since the env requires an extra step to end the episode
-	if (reward == -1):
-		obs, _, end, info = env.step(A)
-env.close
-print("Snake Size : ",ss)
+print("Snake Size : ",test_pol(Pol,[8,8],True))
