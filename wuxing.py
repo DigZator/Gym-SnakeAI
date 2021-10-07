@@ -5,7 +5,7 @@ import gym_snake
 
 #Making the environment
 env = gym.make('snake-v0')
-env.grid_size = [12,12]
+env.grid_size = [8,8]
 env.unit_size = 10
 env.unit_gap = 1
 env.snake_size = 3
@@ -86,80 +86,43 @@ print(detector([0,0],[-5,1]))
 
 #Body and Border detector
 def boder(hx,hy,hd,obs):
-	#hx,hy = envir.head
-	#hd = envir.direction
 	nx,ny,nc = obs.shape
 	outbin = 0 #[LCR] - LEFT, CENTER, RIGHT - Reletive to the direction the snake is facing in - Since it will be binary, we can assign numbers from 0 to 7
 	#d - UP,RIGHT,DOWN,LEFT
+
 	if (hd == 0):
 		L = ((hx-1)*10,(hy)*10)
 		C = (10*hx, 10*(hy-1))
 		R = (10*(hx+1),10*hy)
-		print(hd,L,C,R)
-		if (L[0] < 0):
-			outbin = outbin + 4
-		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
-			outbin = outbin + 4
-		if (C[1] < 0):
-			outbin = outbin + 2
-		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
-			outbin = outbin + 2
-		if (R[0] >= nx):
-			outbin = outbin + 1
-		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
-			outbin = outbin + 1
-	if (hd == 1):
+
+	elif (hd == 1):
 		L = (10*hx,10*(hy-1))
 		C = (10*(hx+1), 10*hy)
 		R = (10*hx,10*(hy+1))
-		print(hd,L,C,R)
-		if (L[1] < 0):
-			outbin = outbin + 4
-		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
-			outbin = outbin + 4
-		if (C[0] >= nx):
-			outbin = outbin + 2
-		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
-			outbin = outbin + 2
-		if (R[1] >= ny):
-			outbin = outbin + 1
-		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
-			outbin = outbin + 1
-	if (hd == 2):
+
+	elif (hd == 2):
 		L = (10*(hx+1),10*hy)
 		C = (10*hx, 10*(hy+1))
 		R = (10*(hx-1),10*hy)
-		print(hd,L,C,R)
-		if (L[0] >= nx):
-			outbin = outbin + 4
-		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
-			outbin = outbin + 4
-		if (C[1] >= ny):
-			outbin = outbin + 2
-		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
-			outbin = outbin + 2
-		if (R[0] < 0):
-			outbin = outbin + 1
-		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
-			outbin = outbin + 1
-	if (hd == 3):
+
+	elif (hd == 3):
 		L = (10*hx,10*(hy+1))
 		C = (10*(hx-1), 10*hy)
 		R = (10*hx,10*(hy-1))
-		print(hd,L,C,R)
-		if (L[1] >= ny):
-			outbin = outbin + 4
-		elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
-			outbin = outbin + 4
-		if (C[0] < 0):
-			outbin = outbin + 2
-		elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
-			outbin = outbin + 2
-		if (R[1] < 0):
-			outbin = outbin + 1
-		elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
-			outbin = outbin + 1
-	#print(hx,hy,L,obs[L[1]][L[0]],C,obs[C[1]][C[0]],R,obs[R[1]][R[0]])
+
+	if (L[0] < 0 or L[0] >= ny or L[1] < 0 or L[1] >= nx):
+		outbin = outbin + 4
+	elif (np.array_equal(obs[L[1]][L[0]], BODY_COLOR)):
+		outbin = outbin + 4
+	if (C[0] < 0 or C[0] >= ny or C[1] < 0 or C[1] >= nx):
+		outbin = outbin + 2
+	elif (np.array_equal(obs[C[1]][C[0]], BODY_COLOR)):
+		outbin = outbin + 2
+	if (R[0] < 0 or R[0] >= ny or R[1] < 0 or R[1] >= nx):
+		outbin = outbin + 1
+	elif (np.array_equal(obs[R[1]][R[0]], BODY_COLOR)):
+		outbin = outbin + 1
+
 	return outbin
 
 def rel_act(hdir,act):
@@ -424,13 +387,14 @@ Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
 	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
 	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
 
-Pol = wuxing_rel(env,2000)
+Pol = wuxing_rel(env,5000,0.9)
 #print(Pol)
 for det in Pol:
 	print(det,Pol[det])
+#env.grid_size = [12,8]
 obs = env.reset()
 end = False
-
+ss = 0
 while (not end):
 	env.render()
 	# Controller
@@ -454,12 +418,16 @@ while (not end):
 	bod = boder(hloc[0],hloc[1],hdir,obs)
 	det = detector(hloc,floc)
 	rdet = rel_det(hdir,det)
+	
 	print("Head :",hloc,"Food :",floc,"Dire :",hdir,"Det :",det,"RDet :",rdet,"Bod :",bod)
+	
 	A = rel_act(hdir,Pol[rdet][bod])
 	print(A)
 	obs, reward, end, info = env.step(A)
-	print(snake.head,snake.direction,"new")
+	#print(snake.head,snake.direction,"new")
+	ss = ss + 1 if reward == 1 else ss
 	#Since the env requires an extra step to end the episode
 	if (reward == -1):
-		obs, _, end, info = env.step(rel_act(hdir,A))
-env.close()
+		obs, _, end, info = env.step(A)
+env.close
+print("Snake Size : ",ss)
