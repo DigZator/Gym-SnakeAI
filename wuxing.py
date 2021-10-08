@@ -31,7 +31,7 @@ snakes_array = game_controller.snakes
 snake = snakes_array[0]
 
 #print(snake.head,snake.direction)
-print(observation.shape)
+#print(observation.shape)
 #print(observation)
 
 nx,ny,nc = observation.shape
@@ -45,18 +45,8 @@ def detector(hloc,floc):
 	diffx,diffy = (fx-hx),(fy-hy)
 	if ((diffx == 0) and (diffy == 0)):
 		dire = 0
-	#elif ((abs(diffx) - abs(diffy)) > 0): 	#The axis where the abosolute difference is greater should have the direction 
-	#	if (diffx > 0):						#If depending the different it would be along the axis in a positive direction
-	#		dire = 1
-	#	elif (diffx < 0):					#or negative diretion
-	#		dire = 3
-	#elif ((abs(diffx) - abs(diffy)) < 0):
-	#	if (diffy > 0):
-	#		dire = 2#0
-	#	elif (diffy < 0):
-	#		dire = 0#2
 	if ((abs(diffx) == abs(diffy)) and (diffx != 0)): #If the absolute difference is same then it lies on the dividing lines
-		if (diffx > 0):									#So the direction assigned is the next sector which is in clockwise direction
+		if (diffx > 0):								  #So the direction assigned is the next sector which is in clockwise direction
 			if (diffy > 0):
 				dire = 2
 			else:
@@ -66,7 +56,7 @@ def detector(hloc,floc):
 				dire = 3
 			else:
 				dire = 0
-	elif (diffx > diffy):
+	elif (diffx > diffy):							  #Simple Compass which uses 2 equations (x>y and x>-y) to point towards the 4 cardinal directions
 		if (diffx < -1*diffy):
 			dire = 0
 		elif (diffx > diffy*-1):
@@ -80,9 +70,6 @@ def detector(hloc,floc):
 		dire = 0
 
 	return dire
-
-print(detector([0,0],[-5,1]))
-#np.array_equal(obs[L[0]][L[1]], BODY_COLOR)
 
 #Body and Border detector
 def boder(hx,hy,hd,obs):
@@ -211,7 +198,7 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 			for x in range(0,nx,10):
 				for y in range(0,ny,10):
 					if (np.array_equal(obs[x][y],FOOD_COLOR)):
-						floc = [x/10,y/10]
+						floc = [y/10,x/10]
 			nloc = snake.head
 			ndir = snake.direction
 			nbod = boder(snake.head[0],snake.head[1],snake.direction,obs)
@@ -275,7 +262,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 			#Random Action Selector
 			A = np.random.randint(3)
 			#env.render()
-			ε = (n_episode/10)/((n_episode/10)+100)
+			ε = (n_episode/10)/((n_episode/10)+epn)
 			
 			# Controller
 			game_controller = env.controller
@@ -350,16 +337,6 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 		epn = epn + 1
 	return Pol
 
-#Pol = 	{0:
-#			{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}},
-#		 1:
-#		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}},
-#		 2:
-#		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}},
-#		 3:
-#		 	{0 : {0:1, 1:1, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}, 1 : {0:2, 1:1, 2:2, 3:0, 4:2, 5:1, 6:2, 7:0}, 2 : {0:0, 1:0, 2:0, 3:0, 4:2, 5:1, 6:2, 7:0}, 3 : {0:0, 1:0, 2:0, 3:0, 4:1, 5:1, 6:2, 7:0}}}
-
-
 #Pol = wuxing(env,1000)
 ##print(Pol)
 #for d in Pol:
@@ -376,7 +353,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 #	for x in range(0,nx,10):
 #		for y in range(0,ny,10):
 #			if (np.array_equal(obs[x][y],FOOD_COLOR)):
-#				floc = [x,y]
+#				floc = [y/10,x/10]
 #	bod = boder(hloc[0],hloc[1],hdir,obs)
 #	det = detector(hloc,floc)
 #	A = Pol[hdir][det][bod]
@@ -388,10 +365,11 @@ Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
 	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
 	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
 
-Pol = wuxing_rel(env,5000,0.9)
+Pol = wuxing_rel(env,5000,0.9,0.9,0.5)
 #print(Pol)
+env.close()
 
-def test_pol(Pol,SIZE = [20,20],rep_step = False):
+def test_pol(Pol,SIZE = [8,8],rep_step = False):
 	envt = gym.make('snake-v0')
 	envt.grid_size = SIZE
 	envt.unit_size = 10
