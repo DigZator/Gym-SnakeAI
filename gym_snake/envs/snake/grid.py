@@ -33,6 +33,12 @@ class Grid():
         self.grid = np.zeros((height, width, channels), dtype=np.uint8)
         self.grid[:,:,:] = self.SPACE_COLOR
         self.open_space = grid_size[0]*grid_size[1]
+        #self.draw([5,2],np.array([1,0,0], dtype=np.uint8))
+        #self.draw([5,3],np.array([1,0,0], dtype=np.uint8))
+        #self.draw([5,4],np.array([1,0,0], dtype=np.uint8))
+        #self.draw([4,3],np.array([1,0,0], dtype=np.uint8))
+        #self.draw([3,3],np.array([1,0,0], dtype=np.uint8))
+        #self.draw([2,2],np.array([1,0,0], dtype=np.uint8))
 
     def check_death(self, head_coord):
         """
