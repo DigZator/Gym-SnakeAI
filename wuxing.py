@@ -78,30 +78,6 @@ def detector(hloc,obs):
 
 	return dire
 
-def better_det(hloc,obs):
-	dire = [0,0,0,0] #URDL
-	floc = [0,0]
-	nx,ny,nc = obs.shape
-	#Declaring and finding the Food Location
-	for x in range(0,nx,10):
-		for y in range(0,ny,10):
-			if (np.array_equal(obs[x][y],FOOD_COLOR)):
-				floc = [y//10,x//10]
-	#dire = [UP,RIGHT,DOWN,LEFT]
-	hx, hy = hloc[0],hloc[1]
-	fx, fy = floc[0],floc[1]
-	diffx = fx-hx
-	diffy = fy-hy
-	if diffx > 0:
-		dire[1] = 1
-	elif diffx < 0:
-		dire[3] = 1
-	if diffy > 0:
-		dire[2] = 1
-	elif diffy < 0:
-		dire[0] = 1
-	return ''.join(map(str,dire))
-
 #Body and Border detector
 def boder(hx,hy,hd,obs):
 	nx,ny,nc = obs.shape
@@ -163,24 +139,6 @@ def rel_det(hdir,det):
 		   [2,3,0,1],
 		   [1,2,3,0]]
 	return rel[hdir][det]
-
-# hdir\bet_det  1000 0100 0010 0001 1100 0110 0011 1001
-#   0           1000 0100 0010 0001 1100 0110 0011 1001
-#   1           0001 1000 0100 0010 1001 1100 0110 0011
-#   2           0010 0001 1000 0100 0011 1001 1100 0110
-#   3           0100 0010 0001 1000 0110 0011 1001 1100
-def bet_rel_det(hdir,det):
-	pot = ["1000", "0100", "0010", "0001", "1100", "0110", "0011", "1001"]
-	idet = 0
-	for ldet in range(len(pot)):
-		if pot[ldet] == det:
-			idet = ldet
-	rel =[["1000", "0100", "0010", "0001", "1100", "0110", "0011", "1001"],
-		  ["0001", "1000", "0100", "0010", "1001", "1100", "0110", "0011"],
-		  ["0010", "0001", "1000", "0100", "0011", "1001", "1100", "0110"],
-		  ["0100", "0010", "0001", "1000", "0110", "0011", "1001", "1100"]]
-	return rel[hdir][idet]
-
 
 def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 	obs = env.reset()
@@ -264,136 +222,6 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 			#Since the env requires an extra step to end the episode
 			if (reward == -1):
 				obs, _, end, info = env.step(rel_act(ndir,A))
-
-			#Target
-			targe = reward + (gamma*Q[nrdet][nbod][Pol[nrdet][nbod]]) - Q[rdet][bod][A]
-			
-			#Spiking the Eligibility Traces
-			E[rdet][bod][A] = E[rdet][bod][A] + 1
-
-			#Sweeping through the states to reduce Eligibility and update Q-Value according 
-			for sdet in Q:
-				for sbod in Q[sdet]:
-					max_a = Pol[sdet][sbod]
-					for sa in range(3):
-						Q[sdet][sbod][sa] = Q[sdet][sbod][sa] + (α*targe*E[sdet][sbod][sa])
-						E[sdet][sbod][sa] = gamma*lmbd*E[sdet][sbod][sa]
-						max_a = sa if Q[sdet][sbod][sa] > Q[sdet][sbod][max_a] else max_a
-					Pol[sdet][sbod] = max_a
-			#else:
-			#	obs,reward,end,info = env.step(A)
-			#	print(reward,end)
-		epn = epn + 1
-	print(Q)
-	return Pol
-
-def wuxing_bet(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
-	obs = env.reset()
-	epn = 0
-	#Initializing the Policy
-	Pol = {det : {bod : 1 for bod in range(8)} for det in range(4)}
-	Pol = {"1000" : {bod : 1 for bod in range(8)},
-		   "0100" : {bod : 1 for bod in range(8)},
-		   "0010" : {bod : 1 for bod in range(8)},
-		   "0001" : {bod : 1 for bod in range(8)},
-		   "1100" : {bod : 1 for bod in range(8)},
-		   "0110" : {bod : 1 for bod in range(8)},
-		   "0011" : {bod : 1 for bod in range(8)},
-		   "1001" : {bod : 1 for bod in range(8)}}
-	#Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
-	#   	   1 :{0: 2, 1: 1, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 2},
-	#   	   2 :{0: 2, 1: 0, 2: 2, 3: 0, 4: 2, 5: 1, 6: 2, 7: 0},
-	#   	   3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
-	#Episodes
-	while (epn < n_episode):
-		print(epn)
-		obs = env.reset()
-		#env.render()
-		end = False
-		drought = 0
-		count = 0
-		#hloc = snake.head
-		#hdir = snake.direction
-
-		#Initalizing Q-values
-		#Q = {det : {bod : {act : 0 for act in range(3)} for bod in range(8)} for det in range(4)}
-		Q = {"1000" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "0100" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "0010" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "0001" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "1100" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "0110" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "0011" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-			 "1001" : {bod : {act : 0 for act in range(3)} for bod in range(8)}}
-		#Pol = {d : {det : {bod : 0 for bod in range(8)} for det in range(4)} for d in range(4)}
-		
-		#Running an episode
-		while (not end):
-			#env.render()
-			#Eligibility Traces
-			#E = {det : {bod : {act : 0 for act in range(3)} for bod in range(8)} for det in range(4)}
-			E = {"1000" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "0100" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "0010" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "0001" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "1100" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "0110" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "0011" : {bod : {act : 0 for act in range(3)} for bod in range(8)},
-				 "1001" : {bod : {act : 0 for act in range(3)} for bod in range(8)}}
-
-			#Random Action Selector
-			A = np.random.randint(3)
-			#env.render()
-			ε = (n_episode/10)/((n_episode/10)+epn)
-			if epn < n_episode//20:
-				ε = 0.9
-			
-			# Controller
-			game_controller = env.controller
-			
-			# Grid
-			grid_object = game_controller.grid
-			grid_pixels = grid_object.grid
-			
-			# Snake(s)
-			snakes_array = game_controller.snakes
-			snake = snakes_array[0]
-			#if hasattr(snake,'head'):
-			hloc = snake.head
-			hdir = snake.direction
-			#print(hloc,hdir,"Old")
-			
-			#Declaring the blocked directions and direction of the Food
-			bod = boder(snake.head[0],snake.head[1],snake.direction,obs)
-			det = better_det(hloc,obs)
-			rdet = bet_rel_det(hdir,det)
-
-			#ε - Greedy Action Selector
-			A = Pol[rdet][bod] if (np.random.random_sample() > (ε)) else A
-
-			#Taking a step
-			obs, reward, end, info = env.step(rel_act(hdir,A))
-			reward = -0.1 if (reward == 0) else reward
-			#drought = 0 if (reward == 1) else drought + 1
-			#count = (count + 1) if reward==1 else 0
-			#reward = 10 if (count == 5 and reward == 1) else reward
-			#count = 0 if (reward == 10) else count
-
-			#reward = -0.5 if (drought > 15 and reward != -1) else reward
-			#print(reward,end)
-
-			#New State
-			nloc = snake.head
-			ndir = snake.direction
-			nbod = boder(snake.head[0],snake.head[1],snake.direction,obs)
-			ndet = better_det(nloc,obs)
-			nrdet = bet_rel_det(hdir,ndet)
-			#print(nloc,ndir)
-
-			#Since the env requires an extra step to end the episode
-			if (reward == -1):
-				obs, _, end, info = env.step(rel_act(ndir,A))
-				reward = -10
 
 			#Target
 			targe = reward + (gamma*Q[nrdet][nbod][Pol[nrdet][nbod]]) - Q[rdet][bod][A]
