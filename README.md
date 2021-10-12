@@ -26,6 +26,7 @@ In this method a state is defined by the relative direction towards the fruit an
 These state parameters set the state space to 4x8 = 24 states
 This method can be found in the wuxing.py file, the algorithm takes time to develop a policy, and sometimes the policy isn't optimal, so there is also an Optimal Policy predefined which can be used instead, by commenting out the line which calls on the wuxing() function.
 
+#### Reward Earned over multiple runs
 ![Reward](https://user-images.githubusercontent.com/87714053/136929995-481ee377-b24b-4935-ba64-eccac0a2542c.png)
  
 ### VI and QL
