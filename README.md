@@ -43,7 +43,8 @@ To generate walls in the grid space, edit the env files.
 
 ![Multi](https://user-images.githubusercontent.com/87714053/136929050-b6534e87-9bb2-4bb7-9d84-4c14a4a6bec6.gif)
 
-![wuxing_rel - Wall](https://user-images.githubusercontent.com/87714053/136929741-02e4f438-5297-4f00-97a5-b9ef047f9899.gif)
+![wuxing_rel - bet_wall](https://user-images.githubusercontent.com/87714053/136930849-9e458042-e1f4-45bf-8e4d-55bfe8c6e89e.gif)
+
 
 # gym-snake
 
