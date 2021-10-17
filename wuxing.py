@@ -278,9 +278,6 @@ def wuxing(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						E[sdet][sbod][sa] = gamma*lmbd*E[sdet][sbod][sa]
 						max_a = sa if Q[sdet][sbod][sa] > Q[sdet][sbod][max_a] else max_a
 					Pol[sdet][sbod] = max_a
-			#else:
-			#	obs,reward,end,info = env.step(A)
-			#	print(reward,end)
 		epn = epn + 1
 		print(food)
 	print(Q)
