@@ -5,7 +5,7 @@ import gym_snake
 
 #Making the environment
 env = gym.make('snake-v0')
-env.grid_size = [20,20]
+env.grid_size = [8,8]
 env.unit_size = 10
 env.unit_gap = 1
 env.snake_size = 3
@@ -39,11 +39,20 @@ OP_Pol = {0 :{0: 1, 1: 1, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2},
 		  3 :{0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 1, 6: 2, 7: 2}}
 
 #Returns a general direction to the Food
-def detector(hloc,floc):
+def detector(hloc,obs):
 	dire = 0
+	#dire = [UP,RIGHT,DOWN,LEFT]
+	floc = [0,0]
+	nx,ny,nc = obs.shape
+	#Declaring and finding the Food Location
+	for x in range(0,nx,10):
+		for y in range(0,ny,10):
+			if (np.array_equal(obs[x][y],FOOD_COLOR)):
+				floc = [y//10,x//10]
 	#dire = [UP,RIGHT,DOWN,LEFT]
 	hx, hy = hloc[0],hloc[1]
 	fx, fy = floc[0],floc[1]
+	diffx,diffy = (fx-hx),(fy-hy)
 	diffx,diffy = (fx-hx),(fy-hy)
 	if ((diffx == 0) and (diffy == 0)):
 		dire = 0
@@ -132,6 +141,7 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 	obs = env.reset()
 	epn = 0
 	Precision = []
+	Rew = []
 	
 	#Initializing the Policy
 	Pol = {det : {bod : 0 for bod in range(8)} for det in range(4)}
@@ -175,17 +185,10 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 			hloc = snake.head
 			hdir = snake.direction
 			#print(hloc,hdir,"Old")
-
-			#Declaring and finding the Food Location
-			floc = [0,0]
-			for x in range(0,nx,10):
-				for y in range(0,ny,10):
-					if (np.array_equal(obs[x][y],FOOD_COLOR)):
-						floc = [y/10,x/10]
 			
 			#Declaring the blocked directions and direction of the Food
 			bod = boder(snake.head[0],snake.head[1],snake.direction,obs)
-			det = detector(hloc,floc)
+			det = detector(hloc,obs)
 			rdet = rel_det(hdir,det)
 
 			#ε - Greedy Action Selector
@@ -193,25 +196,20 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 
 			#Taking a step
 			obs, reward, end, info = env.step(rel_act(hdir,A))
-			#reward = -0.01 if (reward == 0) else reward
+			reward = -0.01 if (reward == 0) else reward
 			#print(reward,end)
 
 			#New State
-			for x in range(0,nx,10):
-				for y in range(0,ny,10):
-					if (np.array_equal(obs[x][y],FOOD_COLOR)):
-						floc = [x/10,y/10]
 			nloc = snake.head
 			ndir = snake.direction
 			nbod = boder(snake.head[0],snake.head[1],snake.direction,obs)
-			ndet = detector(nloc,floc)
+			ndet = detector(nloc,obs)
 			nrdet = rel_det(hdir,ndet)
 			#print(nloc,ndir)
 
 			#Since the env requires an extra step to end the episode
 			if (reward == -1):
 				obs, _, end, info = env.step(rel_act(ndir,A))
-				reward = -10
 
 			#Target
 			targe = reward + (gamma*Q[nrdet][nbod][Pol[nrdet][nbod]]) - Q[rdet][bod][A]
@@ -228,15 +226,18 @@ def wuxing_rel(env,n_episode = 1000,gamma = 0.9,α = 0.5,lmbd = 0.9):
 						E[sdet][sbod][sa] = gamma*lmbd*E[sdet][sbod][sa]
 						max_a = sa if Q[sdet][sbod][sa] > Q[sdet][sbod][max_a] else max_a
 					Pol[sdet][sbod] = max_a
+			ss = test_pol(Pol,[8,8],False)
+			if epn < 20:
+				Rew.append(ss)
+			else:
+				Rew[epn%20] = ss
+			Precision.append(sum(Rew)/(len(Rew)))
 			#else:
 			#	obs,reward,end,info = env.step(A)
 			#	print(reward,end)
-		sim = 0
-		for sdet in Pol:
-			for sbod in Pol[sdet]:
-				sim = (sim + 1) if Pol[sdet][sbod] == OP_Pol[sdet][sbod] else sim
-		Precision.append(sim/(8*4))
+
 		epn = epn + 1
+		print(epn)
 
 	return Pol, Precision
 
@@ -253,7 +254,7 @@ def test_pol(Pol,SIZE = [8,8],rep_step = False):
 	ss = 0
 	obs = envt.reset()
 	while (not end):
-		envt.render()
+		#envt.render()
 		# Controller
 		game_controller = envt.controller
 		
@@ -273,7 +274,7 @@ def test_pol(Pol,SIZE = [8,8],rep_step = False):
 				if (np.array_equal(obs[x][y],FOOD_COLOR)):
 					floc = [y/10,x/10]
 		bod = boder(hloc[0],hloc[1],hdir,obs)
-		det = detector(hloc,floc)
+		det = detector(hloc,obs)
 		rdet = rel_det(hdir,det)
 		
 		if rep_step:
@@ -283,7 +284,7 @@ def test_pol(Pol,SIZE = [8,8],rep_step = False):
 		#print(A)
 		obs, reward, end, info = envt.step(A)
 	
-		ss = ss + 1 if reward == 1 else ss
+		ss = ss + 1 if (reward == 1) else ss
 		#drought = 0 if reward == 1 else drought + 1
 		#Since the env requires an extra step to end the episode
 		if (reward == -1):
@@ -310,18 +311,48 @@ def test_pol(Pol,SIZE = [8,8],rep_step = False):
 #matplotlib.pyplot.savefig(fname = "Compare.png".format(gamma,α,lmbd))
 #matplotlib.pyplot.cla()
 
-#Pol, Precision = wuxing_rel(env,5000,0.9,0.9,0.5)
+Pol, Precision = wuxing_rel(env,5000,0.9,0.9,0.5)
+
+#α = 0
+#gamma = 0
+#lmbd = 0
+#
+#while (gamma < 1):
+#	while (α < 1):
+#		while (lmbd < 1):
+#			Pol, Presicion = wuxing_rel(env,2000,gamma,α,lmbd)
+#			episodes = list(range(1,len(Presicion)+1))
+#			matplotlib.pyplot.plot(episodes, Presicion, label = "gamma = {}, α = {}, lmbd = {}".format(gamma,α,lmbd))
+#			matplotlib.pyplot.legend()
+#			matplotlib.pyplot.savefig(fname = "gamma = {}, α = {}, lmbd = {}.png".format(gamma,α,lmbd))
+#			matplotlib.pyplot.cla()
+#			lmbd += 0.1
+#		α += 0.1
+#	gamma += 0.1 
+
 Feed = []
 for det in OP_Pol:
 	print(det,OP_Pol[det])
 
-for i in range(1):
-	ss = test_pol(OP_Pol,SIZE = [20,20],rep_step = False)
+sum = 0
+run_avg = []
+for i in range(20):
+	ss = 0
+	while (ss < 30):
+		ss = test_pol(OP_Pol,SIZE = [15,15],rep_step = False)
 	print(i)
 	Feed.append(ss)
+	if i == 0:
+		run_avg.append(ss)
+	else:
+		run_avg.append(((run_avg[i-1]*i)+ss)/(i+1))
 
-Games = list(range(1,len(Feed)+1))
-matplotlib.pyplot.plot(Games, Feed)
+
+
+Games = list(range(1,len(Precision)+1))
+#matplotlib.pyplot.plot(Games, Feed, label = "Score Per individual game")
+matplotlib.pyplot.plot(Games, Precision, label = "Running Average")
 matplotlib.pyplot.xlabel("Games")
 matplotlib.pyplot.ylabel("Score")
+matplotlib.pyplot.legend()
 matplotlib.pyplot.show()
